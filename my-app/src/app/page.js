@@ -1,103 +1,148 @@
-import Image from "next/image";
+"use client";
 
-export default function Home() {
+import { useCalculator } from "../hooks/useCalculator";
+import { useKeyboard } from "../hooks/useKeyboard";
+import { formatNumber, parseNumber } from "../lib/calculations";
+
+export default function Calculator() {
+  const calculatorActions = useCalculator();
+  const { keyboardShortcuts } = useKeyboard(calculatorActions);
+
+  const {
+    display,
+    expression,
+    history,
+    inputDigit,
+    inputDecimal,
+    clearAll,
+    clear,
+    backspace,
+    performOperation,
+    performCalculation,
+    calculatePercentage,
+    calculateSquare,
+    calculateSquareRoot,
+    calculateCube,
+    calculateCubeRoot,
+    calculateExponential,
+    calculateNaturalLog,
+    calculateLog10,
+    calculateReciprocal,
+    insertPi,
+    insertE,
+    calculatePower10,
+    calculateSin,
+    calculateCos,
+    calculateTan,
+    toggleSign,
+  } = calculatorActions;
+
+  const renderButton = (content, onClick, className = "") => {
+    return (
+      <button
+        className={`glass-button calculator-button ${className}`}
+        onClick={onClick}
+        aria-label={content}
+      >
+        {content}
+      </button>
+    );
+  };
+
   return (
-    <div className="font-sans grid grid-rows-[20px_1fr_20px] items-center justify-items-center min-h-screen p-8 pb-20 gap-16 sm:p-20">
-      <main className="flex flex-col gap-[32px] row-start-2 items-center sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={180}
-          height={38}
-          priority
-        />
-        <ol className="font-mono list-inside list-decimal text-sm/6 text-center sm:text-left">
-          <li className="mb-2 tracking-[-.01em]">
-            Get started by editing{" "}
-            <code className="bg-black/[.05] dark:bg-white/[.06] font-mono font-semibold px-1 py-0.5 rounded">
-              src/app/page.js
-            </code>
-            .
-          </li>
-          <li className="tracking-[-.01em]">
-            Save and see your changes instantly.
-          </li>
-        </ol>
+    <div className="calculator-container glass p-6">
+      {/* Display */}
+      <div className="glass-display calculator-display">
+        <div className="calculator-expression">{expression || "0"}</div>
+        <div className="calculator-result">{display}</div>
+      </div>
 
-        <div className="flex gap-4 items-center flex-col sm:flex-row">
-          <a
-            className="rounded-full border border-solid border-transparent transition-colors flex items-center justify-center bg-foreground text-background gap-2 hover:bg-[#383838] dark:hover:bg-[#ccc] font-medium text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 sm:w-auto"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={20}
-              height={20}
-            />
-            Deploy now
-          </a>
-          <a
-            className="rounded-full border border-solid border-black/[.08] dark:border-white/[.145] transition-colors flex items-center justify-center hover:bg-[#f2f2f2] dark:hover:bg-[#1a1a1a] hover:border-transparent font-medium text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 w-full sm:w-auto md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Read our docs
-          </a>
+      {/* Keypad */}
+      <div className="calculator-keypad">
+        {/* Row 1 */}
+        {renderButton("AC", clearAll, "clear")}
+        {renderButton("C", clear, "clear")}
+        {renderButton("⌫", backspace)}
+        {renderButton("÷", () => performOperation("÷"), "operator")}
+
+        {/* Row 2 */}
+        {renderButton("7", () => inputDigit("7"))}
+        {renderButton("8", () => inputDigit("8"))}
+        {renderButton("9", () => inputDigit("9"))}
+        {renderButton("×", () => performOperation("×"), "operator")}
+
+        {/* Row 3 */}
+        {renderButton("4", () => inputDigit("4"))}
+        {renderButton("5", () => inputDigit("5"))}
+        {renderButton("6", () => inputDigit("6"))}
+        {renderButton("-", () => performOperation("-"), "operator")}
+
+        {/* Row 4 */}
+        {renderButton("1", () => inputDigit("1"))}
+        {renderButton("2", () => inputDigit("2"))}
+        {renderButton("3", () => inputDigit("3"))}
+        {renderButton("+", () => performOperation("+"), "operator")}
+
+        {/* Row 5 */}
+        {renderButton("0", () => inputDigit("0"))}
+        {renderButton(".", inputDecimal)}
+        {renderButton("±", toggleSign)}
+        {renderButton("=", performCalculation, "equals")}
+      </div>
+
+      {/* Advanced operations */}
+      <div className="calculator-advanced-row">
+        {renderButton("x²", calculateSquare)}
+        {renderButton("√", calculateSquareRoot)}
+        {renderButton("x³", calculateCube)}
+        {renderButton("∛", calculateCubeRoot)}
+        {renderButton("%", calculatePercentage)}
+      </div>
+
+      <div className="calculator-advanced-row">
+        {renderButton("eˣ", calculateExponential)}
+        {renderButton("ln", calculateNaturalLog)}
+        {renderButton("log", calculateLog10)}
+        {renderButton("1/x", calculateReciprocal)}
+        {renderButton("π", insertPi)}
+      </div>
+
+      <div className="calculator-advanced-row">
+        {renderButton("e", insertE)}
+        {renderButton("10ˣ", calculatePower10)}
+        {renderButton("sin", calculateSin)}
+        {renderButton("cos", calculateCos)}
+        {renderButton("tan", calculateTan)}
+      </div>
+
+      {/* History */}
+      {history.length > 0 && (
+        <div className="mt-6 glass p-4">
+          <h3 className="text-lg font-semibold mb-3 text-center">History</h3>
+          <div className="space-y-2 max-h-32 overflow-y-auto">
+            {history.map((item, index) => (
+              <div key={index} className="text-sm text-gray-300 font-mono">
+                {item}
+              </div>
+            ))}
+          </div>
         </div>
-      </main>
-      <footer className="row-start-3 flex gap-[24px] flex-wrap items-center justify-center">
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/file.svg"
-            alt="File icon"
-            width={16}
-            height={16}
-          />
-          Learn
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/window.svg"
-            alt="Window icon"
-            width={16}
-            height={16}
-          />
-          Examples
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/globe.svg"
-            alt="Globe icon"
-            width={16}
-            height={16}
-          />
-          Go to nextjs.org →
-        </a>
-      </footer>
+      )}
+
+      {/* Keyboard shortcuts info */}
+      <div className="mt-4 text-xs text-gray-400 text-center">
+        <details className="cursor-pointer">
+          <summary className="hover:text-gray-300">Keyboard Shortcuts</summary>
+          <div className="mt-2 text-left space-y-1">
+            {Object.entries(keyboardShortcuts).map(([key, description]) => (
+              <div key={key} className="flex justify-between">
+                <span className="font-mono">{key}</span>
+                <span className="ml-4">{description}</span>
+              </div>
+            ))}
+          </div>
+        </details>
+      </div>
     </div>
   );
 }

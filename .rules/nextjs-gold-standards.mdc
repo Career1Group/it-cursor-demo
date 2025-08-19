@@ -1,0 +1,337 @@
+---
+globs: *.ts,*.tsx
+alwaysApply: false
+---
+# Next.js Gold Standards Development Guide
+
+## 🏗️ Project Structure
+
+Follow this recommended structure for all Next.js applications:
+
+```
+src/
+├── app/                    # App Router (Next.js 13+)
+│   ├── (auth)/            # Route groups for organization
+│   ├── api/               # API routes
+│   ├── globals.css
+│   ├── layout.js          # Root layout
+│   └── page.js
+├── components/
+│   ├── ui/               # Reusable UI components (Button, Input, Card)
+│   └── features/         # Business logic components
+├── lib/                  # Utilities, configs, database connections
+├── hooks/                # Custom React hooks
+├── types/                # TypeScript definitions
+└── styles/               # Additional styles
+```
+
+## ⚡ Performance Optimization
+
+### Image Optimization
+
+Always use Next.js Image component for images:
+
+```javascript
+import Image from 'next/image'
+
+<Image
+  src="/hero.jpg"
+  alt="Descriptive alt text"
+  width={1200}
+  height={600}
+  priority={true}        // For above-the-fold images
+  placeholder="blur"
+/>
+```
+
+### Font Optimization
+
+Use next/font for optimized font loading:
+
+```javascript
+import { Inter } from 'next/font/google'
+
+const inter = Inter({
+  subsets: ['latin'],
+  display: 'swap',
+  variable: '--font-inter',
+})
+```
+
+### Code Splitting
+
+Use dynamic imports for heavy components:
+
+```javascript
+import dynamic from 'next/dynamic'
+
+const HeavyComponent = dynamic(() => import('./HeavyComponent'), {
+  loading: () => <Skeleton />,
+  ssr: false // If component doesn't need SSR
+})
+```
+
+## 🔒 Security Best Practices
+
+### Environment Variables
+
+- Use `.env.local` for local development
+- Prefix client-side variables with `NEXT_PUBLIC_`
+- Never expose secrets to the client
+
+```javascript
+// ✅ Good
+const apiUrl = process.env.NEXT_PUBLIC_API_URL
+const secretKey = process.env.SECRET_KEY // Server-side only
+
+// ❌ Bad
+const secretKey = process.env.NEXT_PUBLIC_SECRET_KEY
+```
+
+### API Route Security
+
+Always validate and sanitize inputs:
+
+```javascript
+export async function POST(request) {
+  const body = await request.json()
+  
+  // Validate input
+  if (!body.email || !body.password) {
+    return Response.json({ error: 'Missing required fields' }, { status: 400 })
+  }
+  
+  // Sanitize data
+  const sanitizedEmail = sanitizeEmail(body.email)
+}
+```
+
+## 🎨 Styling Standards
+
+### Tailwind CSS Best Practices
+
+Create reusable component variants:
+
+```javascript
+const Button = ({ variant = 'primary', children, ...props }) => {
+  const baseClasses = 'px-4 py-2 rounded-md font-medium transition-colors'
+  const variants = {
+    primary: 'bg-blue-600 text-white hover:bg-blue-700',
+    secondary: 'bg-gray-200 text-gray-900 hover:bg-gray-300',
+    danger: 'bg-red-600 text-white hover:bg-red-700'
+  }
+  
+  return (
+    <button className={`${baseClasses} ${variants[variant]}`} {...props}>
+      {children}
+    </button>
+  )
+}
+```
+
+### CSS Modules
+
+Use CSS Modules for complex styling:
+
+```javascript
+import styles from './Component.module.css'
+
+<div className={styles.container}>
+  <h1 className={styles.title}>Title</h1>
+</div>
+```
+
+## 🗂️ State Management
+
+### Server State (SWR/TanStack Query)
+
+Use SWR for server state management:
+
+```javascript
+import useSWR from 'swr'
+
+const fetcher = (url) => fetch(url).then((res) => res.json())
+
+function Profile() {
+  const { data, error, isLoading } = useSWR('/api/user', fetcher, {
+    revalidateOnFocus: false,
+    dedupingInterval: 60000
+  })
+
+  if (isLoading) return <Skeleton />
+  if (error) return <ErrorMessage />
+  
+  return <div>Hello {data.name}!</div>
+}
+```
+
+### Client State (Zustand)
+
+Use Zustand for lightweight client state:
+
+```javascript
+import { create } from 'zustand'
+
+const useStore = create((set) => ({
+  count: 0,
+  increment: () => set((state) => ({ count: state.count + 1 })),
+  decrement: () => set((state) => ({ count: state.count - 1 })),
+}))
+```
+
+## 🧪 Testing Standards
+
+### Component Testing
+
+Use React Testing Library:
+
+```javascript
+import { render, screen, fireEvent } from '@testing-library/react'
+import Button from './Button'
+
+test('button calls onClick when clicked', () => {
+  const handleClick = jest.fn()
+  render(<Button onClick={handleClick}>Click me</Button>)
+  
+  fireEvent.click(screen.getByText('Click me'))
+  expect(handleClick).toHaveBeenCalledTimes(1)
+})
+```
+
+## 📱 SEO & Meta Tags
+
+### Dynamic Metadata
+
+Generate metadata dynamically:
+
+```javascript
+export async function generateMetadata({ params }) {
+  const post = await getPost(params.slug)
+  
+  return {
+    title: post.title,
+    description: post.excerpt,
+    openGraph: {
+      title: post.title,
+      description: post.excerpt,
+      images: [post.coverImage],
+    },
+  }
+}
+```
+
+## 🚀 Development Workflow
+
+### ESLint Configuration
+
+Use comprehensive ESLint setup:
+
+```json
+{
+  "extends": [
+    "next/core-web-vitals",
+    "next/typescript"
+  ],
+  "rules": {
+    "@next/next/no-img-element": "error",
+    "react-hooks/exhaustive-deps": "warn",
+    "prefer-const": "error"
+  }
+}
+```
+
+### Prettier Configuration
+
+Maintain consistent code formatting:
+
+```json
+{
+  "semi": true,
+  "trailingComma": "es5",
+  "singleQuote": true,
+  "tabWidth": 2,
+  "useTabs": false
+}
+```
+
+## 📈 Error Handling
+
+### Error Boundaries
+
+Implement error boundaries for graceful error handling:
+
+```javascript
+class ErrorBoundary extends React.Component {
+  constructor(props) {
+    super(props)
+    this.state = { hasError: false }
+  }
+
+  static getDerivedStateFromError(error) {
+    return { hasError: true }
+  }
+
+  componentDidCatch(error, errorInfo) {
+    console.error('Error caught by boundary:', error, errorInfo)
+  }
+
+  render() {
+    if (this.state.hasError) {
+      return <h1>Something went wrong.</h1>
+    }
+    return this.props.children
+  }
+}
+```
+
+## 🎯 Core Principles
+
+1. **Server-First**: Leverage Next.js server-side capabilities
+2. **Performance**: Optimize Core Web Vitals (LCP, FID, CLS)
+3. **Accessibility**: Follow WCAG 2.1 guidelines
+4. **Security**: Validate inputs, use HTTPS, implement proper auth
+5. **Maintainability**: Write clean, documented, testable code
+6. **Scalability**: Design for growth from day one
+7. **Type Safety**: Use TypeScript for better developer experience
+8. **Consistency**: Follow established patterns and conventions
+
+## 📋 Essential Dependencies
+
+```json
+{
+  "dependencies": {
+    "next": "^15.0.0",
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0",
+    "swr": "^2.0.0",
+    "zustand": "^4.0.0"
+  },
+  "devDependencies": {
+    "@types/node": "^20.0.0",
+    "@types/react": "^18.0.0",
+    "@types/react-dom": "^18.0.0",
+    "eslint": "^8.0.0",
+    "eslint-config-next": "^15.0.0",
+    "prettier": "^3.0.0",
+    "tailwindcss": "^4.0.0",
+    "@testing-library/react": "^14.0.0",
+    "@testing-library/jest-dom": "^6.0.0"
+  }
+}
+```
+
+## 🚫 Common Anti-Patterns to Avoid
+
+1. **Don't use `<img>` tags** - Always use Next.js Image component
+2. **Don't expose secrets** - Never prefix secrets with `NEXT_PUBLIC_`
+3. **Don't skip input validation** - Always validate API inputs
+4. **Don't ignore accessibility** - Use semantic HTML and ARIA labels
+5. **Don't forget error boundaries** - Implement proper error handling
+6. **Don't use inline styles** - Use Tailwind CSS or CSS Modules
+7. **Don't skip TypeScript** - Use TypeScript for better DX and type safety
+
+Follow these standards to ensure your Next.js applications are production-ready, maintainable, and provide excellent user experiences.
+description:
+globs:
+alwaysApply: false
+---
